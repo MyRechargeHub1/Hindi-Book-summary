@@ -1,0 +1,124 @@
+name: PDF to Hindi Audio (and optional Video)
+
+on:
+  workflow_dispatch:
+    inputs:
+      pdf_file:
+        description: Path to input PDF in repository
+        required: true
+        default: The_Belief_Effect_Placebo.pdf
+        type: string
+      make_video:
+        description: Generate MP4 video from audio
+        required: true
+        default: false
+        type: boolean
+      images_dir:
+        description: Directory containing related images (required when make_video=true)
+        required: false
+        default: ""
+        type: string
+  push:
+    paths:
+      - "**/*.pdf"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pdf-audio-video-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  convert:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Resolve inputs and validate resources
+        id: resolve
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            PDF_FILE="${{ inputs.pdf_file }}"
+            MAKE_VIDEO="${{ inputs.make_video }}"
+            IMAGES_DIR="${{ inputs.images_dir }}"
+          else
+            PDF_FILE="$(git show --name-only --pretty='' "$GITHUB_SHA" | grep -E '\\.pdf$' | head -n 1 || true)"
+            MAKE_VIDEO="false"
+            IMAGES_DIR=""
+          fi
+
+          if [[ -z "${PDF_FILE}" || ! -f "${PDF_FILE}" ]]; then
+            echo "Could not find PDF file: ${PDF_FILE}" >&2
+            exit 1
+          fi
+
+          STEM="$(basename "${PDF_FILE}")"
+          STEM="${STEM%.pdf}"
+          STEM="${STEM%.PDF}"
+
+          if [[ "${MAKE_VIDEO}" == "true" ]]; then
+            if [[ -z "${IMAGES_DIR}" || ! -d "${IMAGES_DIR}" ]]; then
+              echo "images_dir is required and must exist when make_video=true" >&2
+              exit 1
+            fi
+            IMAGE_COUNT="$(find "${IMAGES_DIR}" -maxdepth 1 -type f \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' \) | wc -l)"
+            if [[ "${IMAGE_COUNT}" -eq 0 ]]; then
+              echo "No supported images found in ${IMAGES_DIR}" >&2
+              exit 1
+            fi
+          fi
+
+          echo "pdf_file=${PDF_FILE}" >> "$GITHUB_OUTPUT"
+          echo "stem=${STEM}" >> "$GITHUB_OUTPUT"
+          echo "make_video=${MAKE_VIDEO}" >> "$GITHUB_OUTPUT"
+          echo "images_dir=${IMAGES_DIR}" >> "$GITHUB_OUTPUT"
+
+      - name: Generate summary, Hindi MP3, and optional MP4
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p output
+
+          CMD=(
+            python src/hindi_audiobook_summary.py
+            --input "${{ steps.resolve.outputs.pdf_file }}"
+            --summary-output "output/${{ steps.resolve.outputs.stem }}_summary.txt"
+            --audio-output "output/${{ steps.resolve.outputs.stem }}_hindi.mp3"
+          )
+
+          if [[ "${{ steps.resolve.outputs.make_video }}" == "true" ]]; then
+            CMD+=(
+              --images-dir "${{ steps.resolve.outputs.images_dir }}"
+              --video-output "output/${{ steps.resolve.outputs.stem }}_video.mp4"
+            )
+          fi
+
+          "${CMD[@]}"
+
+      - name: Upload outputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: "${{ steps.resolve.outputs.stem }}-outputs"
+          path: output/*
+          if-no-files-found: error

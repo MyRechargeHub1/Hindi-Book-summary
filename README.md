@@ -1,18 +1,18 @@
 # Hindi Audio Book Summary Generator
 
-This repository now includes a lightweight Python pipeline to create **Hindi book summaries** and convert them into **audio narration**.
+This project turns Hindi/English book content into:
 
-## What it does
+- summary text
+- Hindi MP3 narration
+- optional MP4 video (audio + related images)
 
-- Reads a Hindi text file (book notes, chapter text, transcript, etc.)
-- Generates a concise chapter-wise summary using extractive scoring
-- Writes the summary to a `.txt` file
-- Optionally converts the summary into Hindi MP3 audio using `gTTS`
+It supports both `.txt` and `.pdf` input files.
 
 ## Project structure
 
-- `src/hindi_audiobook_summary.py` – main CLI tool
-- `tests/test_summarizer.py` – unit tests for summarization logic
+- `src/hindi_audiobook_summary.py` – CLI for summary/audio/video generation
+- `tests/test_summarizer.py` – unit tests for text processing and image ranking
+- `.github/workflows/pdf_to_hindi_audio_video.yml` – optional cloud automation via GitHub Actions
 - `requirements.txt` – Python dependencies
 
 ## Setup
@@ -23,15 +23,15 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-For audio export, also install:
+For video generation, install ffmpeg/ffprobe:
 
 ```bash
-pip install gTTS
+sudo apt-get install ffmpeg
 ```
 
-## Usage
+## CLI usage
 
-### 1) Create summary text only
+### 1) Summary only
 
 ```bash
 python src/hindi_audiobook_summary.py \
@@ -39,25 +39,51 @@ python src/hindi_audiobook_summary.py \
   --summary-output output/summary.txt
 ```
 
-### 2) Create summary + Hindi audiobook (MP3)
+### 2) PDF -> summary + Hindi MP3 (audio first)
 
 ```bash
 python src/hindi_audiobook_summary.py \
-  --input examples/book.txt \
-  --summary-output output/summary.txt \
-  --audio-output output/summary.mp3
+  --input The_Belief_Effect_Placebo.pdf \
+  --summary-output output/the_belief_effect_summary.txt \
+  --audio-output output/the_belief_effect_hindi.mp3
 ```
 
-## Input format
+### 3) PDF -> summary + MP3 + MP4 (related images)
 
-- Plain UTF-8 text file.
-- Chapters are optional. If present, use headings like:
-  - `अध्याय 1: ...`
-  - `Chapter 1: ...`
+```bash
+python src/hindi_audiobook_summary.py \
+  --input The_Belief_Effect_Placebo.pdf \
+  --summary-output output/the_belief_effect_summary.txt \
+  --audio-output output/the_belief_effect_hindi.mp3 \
+  --images-dir assets/related_images \
+  --video-output output/the_belief_effect_video.mp4
+```
 
-Without chapters, the full text is treated as one section.
+## GitHub Actions automation
+
+Workflow file: `.github/workflows/pdf_to_hindi_audio_video.yml`
+
+### Trigger-ready run (audio first)
+
+1. Go to **Actions** -> **PDF to Hindi Audio (and optional Video)**.
+2. Click **Run workflow**.
+3. Keep: `make_video = false`.
+4. Set: `pdf_file = The_Belief_Effect_Placebo.pdf` (or another repo PDF path).
+5. Click **Run workflow** and download artifact files (`output/*_summary.txt`, `output/*_hindi.mp3`).
+
+### Move to video step later
+
+- Re-run with `make_video = true` and provide `images_dir` that contains at least one `.jpg/.jpeg/.png/.webp` file.
+- The workflow validates `images_dir` existence and image presence before running video generation.
+
+### Workflow behavior
+
+- Trigger on PDF push: generates summary + MP3 only.
+- Manual trigger (`workflow_dispatch`): generates summary + MP3, and optional MP4 when requested.
+- Outputs are uploaded as a single artifact from `output/*`.
 
 ## Notes
 
-- Hindi sentence splitting works with `।`, `.`, `?`, and `!`.
-- Audio generation uses Google Text-to-Speech (`gTTS`) and requires internet access.
+- PDF input requires `pypdf`.
+- Audio generation uses `gTTS` (internet required).
+- Video generation requires local images and `ffmpeg`/`ffprobe`.
