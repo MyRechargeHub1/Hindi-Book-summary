@@ -1,52 +1,50 @@
-# Hindi Book Summary, Audio, and Video Generator
+# Hindi PDF → Hindi Audio → Video (Stage-wise)
 
-This project provides a CLI to:
-- read text from `.txt` or `.pdf` books,
-- create a Hindi summary,
-- optionally generate Hindi MP3 audio from the summary,
-- optionally generate a video from the audio using related images.
+This repository now supports the exact requested flow for `The_Belief_Effect_Placebo.pdf`:
+
+1. **First** generate Hindi audio from PDF text.
+2. **Later** generate video from that audio using related images.
 
 ## Setup
 
 ```bash
 python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\\Scripts\\Activate.ps1
+source .venv/bin/activate  # Windows: .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 ```
 
-## CLI usage
+> `ffmpeg` and `ffprobe` are required for MP3 chunk merge and video rendering.
+
+## 1) First make Hindi audio from the PDF
 
 ```bash
-python src/hindi_audiobook_summary.py \
-  --input <book.txt|book.pdf> \
-  --summary-output output/summary.txt \
-  [--audio-output output/summary_hi.mp3] \
-  [--video-output output/summary_video.mp4 --images-dir images/] \
-  [--ratio 0.3]
+python automated_audiobook_to_video.py audio \
+  --pdf The_Belief_Effect_Placebo.pdf \
+  --audio-output output/The_Belief_Effect_Placebo_hi.mp3
 ```
 
-### Audio first (requested flow)
+## 2) Later make video from the existing audio
+
+### Option A: Auto-download related images (Wikimedia Commons)
 
 ```bash
-python src/hindi_audiobook_summary.py \
-  --input The_Belief_Effect_Placebo.pdf \
-  --summary-output output/the_belief_effect_summary.txt \
-  --audio-output output/the_belief_effect_hindi.mp3
+python automated_audiobook_to_video.py video \
+  --audio output/The_Belief_Effect_Placebo_hi.mp3 \
+  --video-output output/The_Belief_Effect_Placebo_video.mp4 \
+  --query "belief placebo psychology"
 ```
 
-### Video later from summary audio
+### Option B: Use your own image folder
 
 ```bash
-python src/hindi_audiobook_summary.py \
-  --input The_Belief_Effect_Placebo.pdf \
-  --summary-output output/the_belief_effect_summary.txt \
-  --audio-output output/the_belief_effect_hindi.mp3 \
-  --video-output output/the_belief_effect_video.mp4 \
+python automated_audiobook_to_video.py video \
+  --audio output/The_Belief_Effect_Placebo_hi.mp3 \
+  --video-output output/The_Belief_Effect_Placebo_video.mp4 \
   --images-dir images/
 ```
 
 ## Notes
 
-- `gTTS` requires internet access at runtime to synthesize speech.
-- Video generation requires `ffmpeg` and `ffprobe` installed on the system.
-- `--video-output` requires both `--audio-output` and `--images-dir`.
+- Large PDFs are split into TTS-safe chunks automatically.
+- Hindi TTS is generated with `gTTS` (`lang=hi`).
+- If `--images-dir` is not provided, related images are downloaded automatically.
