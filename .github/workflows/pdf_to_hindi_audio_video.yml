@@ -1,0 +1,102 @@
+name: PDF to Hindi Audio (and optional Video)
+
+on:
+  workflow_dispatch:
+    inputs:
+      pdf_file:
+        description: "Path to input PDF in repository"
+        required: true
+        default: "The_Belief_Effect_Placebo.pdf"
+      make_video:
+        description: "Generate MP4 video from audio"
+        required: true
+        default: "false"
+      images_dir:
+        description: "Directory containing related images (required when make_video=true)"
+        required: false
+        default: ""
+  push:
+    paths:
+      - "**/*.pdf"
+
+jobs:
+  convert:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Resolve PDF and execution mode
+        id: resolve
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            PDF_FILE="${{ github.event.inputs.pdf_file }}"
+            MAKE_VIDEO="${{ github.event.inputs.make_video }}"
+            IMAGES_DIR="${{ github.event.inputs.images_dir }}"
+          else
+            PDF_FILE="$(git diff-tree --no-commit-id --name-only -r "$GITHUB_SHA" | grep -E '\\.pdf$' | head -n 1)"
+            MAKE_VIDEO="false"
+            IMAGES_DIR=""
+          fi
+
+          if [[ -z "${PDF_FILE}" || ! -f "${PDF_FILE}" ]]; then
+            echo "Could not find PDF file: ${PDF_FILE}" >&2
+            exit 1
+          fi
+
+          STEM="$(basename "${PDF_FILE}" .pdf)"
+          STEM="${STEM%.PDF}"
+
+          echo "pdf_file=${PDF_FILE}" >> "$GITHUB_OUTPUT"
+          echo "stem=${STEM}" >> "$GITHUB_OUTPUT"
+          echo "make_video=${MAKE_VIDEO}" >> "$GITHUB_OUTPUT"
+          echo "images_dir=${IMAGES_DIR}" >> "$GITHUB_OUTPUT"
+
+      - name: Generate summary and Hindi MP3
+        run: |
+          mkdir -p output
+          python src/hindi_audiobook_summary.py \
+            --input "${{ steps.resolve.outputs.pdf_file }}" \
+            --summary-output "output/${{ steps.resolve.outputs.stem }}_summary.txt" \
+            --audio-output "output/${{ steps.resolve.outputs.stem }}_hindi.mp3"
+
+      - name: Generate MP4 video (optional)
+        if: ${{ steps.resolve.outputs.make_video == 'true' }}
+        run: |
+          if [[ -z "${{ steps.resolve.outputs.images_dir }}" ]]; then
+            echo "images_dir is required when make_video=true" >&2
+            exit 1
+          fi
+
+          python src/hindi_audiobook_summary.py \
+            --input "${{ steps.resolve.outputs.pdf_file }}" \
+            --summary-output "output/${{ steps.resolve.outputs.stem }}_summary.txt" \
+            --audio-output "output/${{ steps.resolve.outputs.stem }}_hindi.mp3" \
+            --images-dir "${{ steps.resolve.outputs.images_dir }}" \
+            --video-output "output/${{ steps.resolve.outputs.stem }}_video.mp4"
+
+      - name: Upload outputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: "${{ steps.resolve.outputs.stem }}-outputs"
+          path: output/*
+          if-no-files-found: error

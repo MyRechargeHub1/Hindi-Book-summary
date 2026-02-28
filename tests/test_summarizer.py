@@ -1,4 +1,11 @@
-from src.hindi_audiobook_summary import split_sections, split_sentences, summarize_text
+from pathlib import Path
+
+from src.hindi_audiobook_summary import (
+    pick_related_images,
+    split_sections,
+    split_sentences,
+    summarize_text,
+)
 
 
 def test_split_sections_with_chapters() -> None:
@@ -29,3 +36,15 @@ def test_summarize_text_returns_content() -> None:
 
     assert "अनुशासन" in summary or "अभ्यास" in summary
     assert len(summary) > 20
+
+
+def test_pick_related_images_scores_filenames(tmp_path: Path) -> None:
+    (tmp_path / "mindset_growth.jpg").write_bytes(b"x")
+    (tmp_path / "health_sleep.png").write_bytes(b"x")
+    (tmp_path / "neutral.webp").write_bytes(b"x")
+
+    summary = "यह अध्याय growth mindset और positive health आदतों पर आधारित है।"
+    ranked = pick_related_images(summary, tmp_path)
+
+    assert ranked[0].name in {"mindset_growth.jpg", "health_sleep.png"}
+    assert len(ranked) == 3
