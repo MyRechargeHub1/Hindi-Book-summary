@@ -1,76 +1,20 @@
-# Hindi Audio Book Summary Generator
+# Automated Audiobook to Video Workflow
 
-This repository includes a Python pipeline to create **Hindi book summaries** from text or PDF files, convert them into **audio narration**, and optionally generate a **video with related images**.
+## Setup Instructions
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/MyRechargeHub1/Hindi-Book-summary.git
+   cd Hindi-Book-summary
+   ```
+2. Install the required dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-## What it does
-
-- Reads a Hindi `.txt` or `.pdf` book file
-- Generates a concise chapter-wise summary using extractive scoring
-- Writes the summary to a `.txt` file
-- Optionally converts the summary into Hindi MP3 audio using `gTTS`
-- Optionally creates an MP4 video from audio + related images using `ffmpeg`
-
-## Project structure
-
-- `src/hindi_audiobook_summary.py` – main CLI tool
-- `tests/test_summarizer.py` – unit tests for summarization and image selection logic
-- `requirements.txt` – Python dependencies
-
-## Setup
-
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
-
-For video generation, install ffmpeg on your system:
-
-```bash
-sudo apt-get install ffmpeg
-```
-
-## Usage
-
-### 1) Create summary text only
-
-```bash
-python src/hindi_audiobook_summary.py \
-  --input examples/book.txt \
-  --summary-output output/summary.txt
-```
-
-### 2) Create summary + Hindi audiobook (MP3)
-
-```bash
-python src/hindi_audiobook_summary.py \
-  --input The_Power_of_Discipline_by_Muneer_Shah.pdf \
-  --summary-output output/summary.txt \
-  --audio-output output/summary.mp3
-```
-
-### 3) Create summary + audio + video from related images
-
-```bash
-python src/hindi_audiobook_summary.py \
-  --input The_Power_of_Discipline_by_Muneer_Shah.pdf \
-  --summary-output output/summary.txt \
-  --audio-output output/summary.mp3 \
-  --images-dir assets/discipline_images \
-  --video-output output/summary_video.mp4
-```
-
-## Input format
-
-- UTF-8 text (`.txt`) or PDF (`.pdf`) file.
-- Chapters are optional. If present, use headings like:
-  - `अध्याय 1: ...`
-  - `Chapter 1: ...`
-
-Without chapters, the full text is treated as one section.
-
-## Notes
-
-- Hindi sentence splitting works with `।`, `.`, `?`, and `!`.
-- Audio generation uses Google Text-to-Speech (`gTTS`) and requires internet access.
-- Video generation requires local images in `--images-dir` and `ffmpeg`/`ffprobe` binaries.
+## Usage Guide
+1. Ensure you have the necessary audio files in the `audio` directory.
+2. Run the script to convert audio to video:
+   ```bash
+   python convert.py
+   ```
+3. The output videos will be saved in the `output` directory.
