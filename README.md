@@ -1,18 +1,19 @@
 # Hindi Audio Book Summary Generator
 
-This repository now includes a lightweight Python pipeline to create **Hindi book summaries** and convert them into **audio narration**.
+This repository includes a Python pipeline to create **Hindi book summaries** from text or PDF files, convert them into **audio narration**, and optionally generate a **video with related images**.
 
 ## What it does
 
-- Reads a Hindi text file (book notes, chapter text, transcript, etc.)
+- Reads a Hindi `.txt` or `.pdf` book file
 - Generates a concise chapter-wise summary using extractive scoring
 - Writes the summary to a `.txt` file
 - Optionally converts the summary into Hindi MP3 audio using `gTTS`
+- Optionally creates an MP4 video from audio + related images using `ffmpeg`
 
 ## Project structure
 
 - `src/hindi_audiobook_summary.py` – main CLI tool
-- `tests/test_summarizer.py` – unit tests for summarization logic
+- `tests/test_summarizer.py` – unit tests for summarization and image selection logic
 - `requirements.txt` – Python dependencies
 
 ## Setup
@@ -23,10 +24,10 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-For audio export, also install:
+For video generation, install ffmpeg on your system:
 
 ```bash
-pip install gTTS
+sudo apt-get install ffmpeg
 ```
 
 ## Usage
@@ -43,14 +44,25 @@ python src/hindi_audiobook_summary.py \
 
 ```bash
 python src/hindi_audiobook_summary.py \
-  --input examples/book.txt \
+  --input The_Power_of_Discipline_by_Muneer_Shah.pdf \
   --summary-output output/summary.txt \
   --audio-output output/summary.mp3
 ```
 
+### 3) Create summary + audio + video from related images
+
+```bash
+python src/hindi_audiobook_summary.py \
+  --input The_Power_of_Discipline_by_Muneer_Shah.pdf \
+  --summary-output output/summary.txt \
+  --audio-output output/summary.mp3 \
+  --images-dir assets/discipline_images \
+  --video-output output/summary_video.mp4
+```
+
 ## Input format
 
-- Plain UTF-8 text file.
+- UTF-8 text (`.txt`) or PDF (`.pdf`) file.
 - Chapters are optional. If present, use headings like:
   - `अध्याय 1: ...`
   - `Chapter 1: ...`
@@ -61,3 +73,4 @@ Without chapters, the full text is treated as one section.
 
 - Hindi sentence splitting works with `।`, `.`, `?`, and `!`.
 - Audio generation uses Google Text-to-Speech (`gTTS`) and requires internet access.
+- Video generation requires local images in `--images-dir` and `ffmpeg`/`ffprobe` binaries.
