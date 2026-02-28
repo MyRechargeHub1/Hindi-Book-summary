@@ -6,7 +6,7 @@ This project turns Hindi/English book content into:
 - Hindi MP3 narration
 - optional MP4 video (audio + related images)
 
-It supports both `.txt` and `.pdf` input files.
+It supports both `.txt` and `.pdf` input files and keeps a single, conflict-safe setup section for dependency installs.
 
 ## Project structure
 
@@ -81,6 +81,12 @@ Workflow file: `.github/workflows/pdf_to_hindi_audio_video.yml`
 - Trigger on PDF push: generates summary + MP3 only.
 - Manual trigger (`workflow_dispatch`): generates summary + MP3, and optional MP4 when requested.
 - Outputs are uploaded as a single artifact from `output/*`.
+
+## Quick conflict resolution checklist
+
+- Keep `requirements.txt` with exactly: `pytest`, `gTTS`, `pypdf`.
+- Keep the audio-first command using `The_Belief_Effect_Placebo.pdf` in this README.
+- Keep workflow path as `.github/workflows/pdf_to_hindi_audio_video.yml`.
 
 ## Notes
 
