@@ -6,7 +6,14 @@ This project turns Hindi/English book content into:
 - Hindi MP3 narration
 - optional MP4 video (audio + related images)
 
-It supports both `.txt` and `.pdf` as input.
+It supports both `.txt` and `.pdf` input files.
+
+## Project structure
+
+- `src/hindi_audiobook_summary.py` – CLI for summary/audio/video generation
+- `tests/test_summarizer.py` – unit tests for text processing and image ranking
+- `.github/workflows/pdf_to_hindi_audio_video.yml` – optional cloud automation via GitHub Actions
+- `requirements.txt` – Python dependencies
 
 ## Setup
 
@@ -32,7 +39,7 @@ python src/hindi_audiobook_summary.py \
   --summary-output output/summary.txt
 ```
 
-### 2) PDF -> summary + Hindi MP3
+### 2) PDF -> summary + Hindi MP3 (audio first)
 
 ```bash
 python src/hindi_audiobook_summary.py \
@@ -57,8 +64,8 @@ python src/hindi_audiobook_summary.py \
 Workflow file: `.github/workflows/pdf_to_hindi_audio_video.yml`
 
 - Trigger on PDF push: generates summary + MP3.
-- Manual trigger (`workflow_dispatch`): choose `pdf_file`; set `make_video=true` with `images_dir` to also generate MP4.
-- Download outputs from Actions artifact (`output/*.txt`, `output/*.mp3`, optional `output/*.mp4`).
+- Manual trigger (`workflow_dispatch`): set `pdf_file`, then optionally set `make_video=true` with `images_dir`.
+- Download outputs from Actions artifacts (`output/*.txt`, `output/*.mp3`, optional `output/*.mp4`).
 
 ## Notes
 
