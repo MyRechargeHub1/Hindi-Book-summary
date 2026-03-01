@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from automated_audiobook_to_video import convert_to_wav, parse_audio_mime_type
 from src.hindi_audiobook_summary import (
     pick_related_images,
     split_sections,
@@ -48,3 +49,17 @@ def test_pick_related_images_scores_filenames(tmp_path: Path) -> None:
 
     assert ranked[0].name in {"mindset_growth.jpg", "health_sleep.png"}
     assert len(ranked) == 3
+
+
+def test_parse_audio_mime_type_with_params() -> None:
+    parsed = parse_audio_mime_type("audio/L16;rate=16000")
+    assert parsed["bits_per_sample"] == 16
+    assert parsed["rate"] == 16000
+
+
+def test_convert_to_wav_adds_header() -> None:
+    pcm = b"\x00\x01" * 100
+    wav = convert_to_wav(pcm, "audio/L16;rate=24000")
+    assert wav[:4] == b"RIFF"
+    assert wav[8:12] == b"WAVE"
+    assert len(wav) == 44 + len(pcm)

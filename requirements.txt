@@ -1,3 +1,5 @@
 gTTS
 pypdf
+requests
+google-genai
 pytest
